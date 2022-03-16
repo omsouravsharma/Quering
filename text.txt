@@ -1,0 +1,9 @@
+Random Text: 
+
+- Generated ideas to solve customer problems to increase the time to value in the power industries.
+- Translated requirements / vision into prioritized list of user stories and deliver to required timelines and quality standards
+- Collaborated with Product Development Team, Product manager, scrum master, Solution Providers (Partner / Integrators), and other cross-functional teams.
+- Experienced working with Databases like SQL and Oracle with strong knowledge in development of SQL queries
+- Excellent complex problem solving and analytical skills
+- Worked on Machine learning model building for predictive maintenance. 
+- Experienced with commonly used EAM (Enterprise Asset Management) systems, such as SAP, Maximo.
