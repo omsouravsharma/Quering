@@ -1,6 +1,6 @@
 --CHAPTER 3
 
-USE TSQLV3
+USE TSQLV3;
 
 --SELECT Custid,COUNT(DISTINCT empid)
 --FROM Sales.Orders
@@ -263,3 +263,127 @@ USE TSQLV3
 --ON CUR.orderyear = PRV.orderyear + 1;
 
 --PG 282 CTEs
+
+-- CTE
+
+--WITH ORDERCOUNT 
+--AS 
+--(SELECT YEAR(orderdate) AS ORDERYEAR, COUNT(*) AS NUMORDERS
+--FROM Sales.Orders
+--GROUP BY YEAR(orderdate))
+
+--SELECT ORDERYEAR , NUMORDERS
+--FROM ORDERCOUNT
+
+--WITH C1 AS 
+--(
+--SELECT YEAR(ORDERDATE) AS ORDERYEAR, CUSTID FROM SALES.ORDERS),
+--C2 AS 
+--(
+--SELECT ORDERYEAR, COUNT(DISTINCT CUSTID) AS NUMCUSTS
+--FROM C1 GROUP BY ORDERYEAR)
+
+--SELECT ORDERYEAR, NUMCUSTS
+--FROM C2
+--WHERE NUMCUSTS > 70;
+
+
+--WITH ORDERCOUNT
+--AS
+--(
+--SELECT 
+--	YEAR(ORDERDATE) AS ORDERYEAR, COUNT(*) AS NUMORDERS
+--FROM Sales.Orders
+--GROUP BY YEAR(ORDERDATE)
+--)
+
+--SELECT CUR.ORDERYEAR, CUR.NUMORDERS, PRV.NUMORDERS, CUR.NUMORDERS - PRV.NUMORDERS AS DIFF
+--FROM ORDERCOUNT AS CUR
+--LEFT OUTER JOIN ORDERCOUNT AS PRV 
+--ON CUR.ORDERYEAR = PRV.ORDERYEAR +1
+
+
+-- PG 284
+
+--SET NOCOUNT ON;
+--USE tempdb;
+--IF OBJECT_ID(N'dbo.Employees', N'U') IS NOT NULL DROP TABLE dbo.Employees;
+--CREATE TABLE dbo.Employees
+--(
+--empid INT NOT NULL
+--CONSTRAINT PK_Employees PRIMARY KEY,
+--mgrid INT NULL
+--CONSTRAINT FK_Employees_Employees FOREIGN KEY REFERENCES
+--dbo.Employees(empid),
+--empname VARCHAR(25) NOT NULL,
+--salary MONEY NOT NULL
+--);
+--INSERT INTO dbo.Employees(empid, mgrid, empname, salary)
+--VALUES(1, NULL, 'David' , $10000.00),
+--(2, 1, 'Eitan' , $7000.00),
+--(3, 1, 'Ina' , $7500.00),
+--(4, 2, 'Seraph' , $5000.00),
+--(5, 2, 'Jiru' , $5500.00),
+--(6, 2, 'Steve' , $4500.00),
+--(7, 3, 'Aaron' , $5000.00),
+--(8, 5, 'Lilach' , $3500.00),
+--(9, 7, 'Rita' , $3000.00),
+--(10, 5, 'Sean' , $3000.00),
+--(11, 7, 'Gabriel', $3000.00),
+--(12, 9, 'Emilia' , $2000.00),
+--(13, 9, 'Michael', $2000.00),
+--(14, 9, 'Didi' , $1500.00);
+--CREATE UNIQUE INDEX idx_nc_mgr_emp_i_name_sal
+--ON dbo.Employees(mgrid, empid) INCLUDE(empname, salary);
+
+
+
+
+--SELECT * FROM DBO.EMPLOYEES
+
+
+
+
+
+
+
+--WITH  EMPSCTE AS 
+--(
+--SELECT EMPID, MGRID, EMPNAME, SALARY
+--FROM dbo.Employees
+--WHERE EMPID = 3
+
+--UNION ALL
+
+--SELECT C.EMPID, C.MGRID, C.EMPNAME, C.SALARY
+--FROM EMPSCTE AS P JOIN
+--DBO.EMPLOYEES AS C
+--ON C.MGRID = P.EMPID
+--)
+
+--SELECT EMPID, MGRID, EMPNAME, SALARY FROM EMPSCTE;
+
+-- VIEWS
+
+
+--USE TSQLV3;
+--IF OBJECT_ID(N'SALES.USACUSTS',N'V') IS NOT NULL DROP VIEW SALES.USACUSTS;
+--GO
+
+--CREATE VIEW SALES.USACUTS WITH SCHEMABINDING
+--AS 
+
+--SELECT
+--custid, companyname, contactname, contacttitle, address, CITY, REGION, postalcode, COUNTRY, phone, FAX
+
+
+--FROM Sales.Customers
+--WHERE country = N'USA'
+--WITH CHECK OPTION;
+
+
+--SELECT custid, companyname
+--FROM Sales.Customers
+--WHERE COUNTRY = N'USA'
+--ORDER BY REGION, CITY;
+
