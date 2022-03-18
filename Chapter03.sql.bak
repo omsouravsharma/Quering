@@ -1,6 +1,6 @@
 --CHAPTER 3
 
--- USE TSQLV3;
+USE TSQLV3;
 
 --SELECT Custid,COUNT(DISTINCT empid)
 --FROM Sales.Orders
