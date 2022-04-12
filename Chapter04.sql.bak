@@ -61,4 +61,4 @@
 --CROSS JOIN TSQLV3.DBO.GetNums(1, @ROWS_PER_PARTITION) AS RPP;
 
 
--- LIMITATION PG344 working on queries at work
+-- LIMITATION PG344
