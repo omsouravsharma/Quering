@@ -62,3 +62,4 @@
 
 
 -- LIMITATION PG344 working on queries at work
+-- WINDOWS ELEMENT 
