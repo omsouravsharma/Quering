@@ -1,0 +1,2 @@
+--PIVIOTING
+-- one to one pivioting 
