@@ -75,3 +75,50 @@ INSERT INTO dbo.Matrix(orderyear, y2015) VALUES(2015, 1);
 SELECT orderyear, y2013, y2014, y2015 FROM dbo.Matrix;
 
 --PG396
+USE TSQLV3
+
+SELECT 
+CUSTID, 
+SUM(VAL*Y2013) AS [2013], 
+SUM(VAL*Y2014) AS [2014], 
+SUM(VAL*Y2015) AS [2015]
+FROM (SELECT CUSTID, YEAR(ORDERDATE) AS ORDERYEAR, VAL FROM SALES.OrderValues) AS D
+INNER JOIN DBO.Matrix AS m ON D.ORDERYEAR = M.orderyear
+GROUP BY custid
+
+SELECT custid,
+SUM(CASE WHEN orderyear = 2013 THEN 1 END) AS [2013],
+SUM(CASE WHEN orderyear = 2014 THEN 1 END) AS [2014],
+SUM(CASE WHEN orderyear = 2015 THEN 1 END) AS [2015]
+FROM (SELECT custid, YEAR(orderdate) AS orderyear
+FROM Sales.Orders) AS D
+GROUP BY custid;
+
+SELECT custid,
+SUM(val*y2013) AS sum2013,
+SUM(val*y2014) AS sum2014,
+SUM(val*y2015) AS sum2015,
+AVG(val*y2013) AS avg2013,
+AVG(val*y2014) AS avg2014,
+AVG(val*y2015) AS avg2015,
+SUM(y2013) AS cnt2013,
+SUM(y2014) AS cnt2014,
+SUM(y2015) AS cnt2015
+FROM (SELECT custid, YEAR(orderdate) AS orderyear, val
+FROM Sales.OrderValues) AS D
+INNER JOIN dbo.Matrix AS M ON D.orderyear = M.orderyear
+GROUP BY custid;
+
+IF OBJECT_ID(N'dbo.PvtOrders', N'U') IS NOT NULL DROP TABLE dbo.PvtOrders
+
+
+
+SELECT custid, [2013], [2014], [2015]
+INTO dbo.PvtOrders
+FROM (SELECT custid, YEAR(orderdate) AS orderyear, val
+FROM Sales.OrderValues) AS D
+PIVOT(SUM(val) FOR orderyear IN([2013],[2014],[2015])) AS P;
+
+SELECT custid, [2013], [2014], [2015] FROM dbo.PvtOrders;
+
+--PG 400
