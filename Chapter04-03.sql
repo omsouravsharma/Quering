@@ -41,3 +41,34 @@ FROM DBO.Groups
 GROUP BY GROUPID;
 
 --PG 416
+TRUNCATE TABLE dbo.Groups;
+INSERT INTO dbo.Groups(groupid, memberid, string, val) VALUES
+('a', 3, 'stra1', -6),
+('a', 9, 'stra2', 7),
+('b', 2, 'strb1', -3),
+('b', 4, 'strb2', -7),
+('b', 5, 'strb3', 3),
+('b', 9, 'strb4', 11),
+('c', 3, 'strc1', 8),
+('c', 7, 'strc2', 0),
+('c', 9, 'strc3', 12);
+
+SELECT groupid, ROUND(EXP(SUM(LOG(val))), 0) AS product
+FROM dbo.Groups
+GROUP BY groupid;
+
+SELECT GROUPID , 
+ROUND(EXP(SUM(LOG(ABS((NULLIF(VAL,0)))))),0) AS PRODUCT, 
+MIN(CASE WHEN VAL = 0 THEN 0 ELSE 1 END) AS ZERO
+, CASE WHEN COUNT(CASE WHEN VAL < 0 THEN 1 END)%2>0 THEN -1 ELSE 1 END AS NEGATIVE
+FROM DBO.GROUPS
+GROUP BY groupid
+
+SELECT GROUPID , 
+ROUND(EXP(SUM(LOG(ABS((NULLIF(VAL,0)))))),0) * MIN(CASE WHEN VAL = 0 THEN 0 ELSE 1 END) 
+* CASE WHEN COUNT(CASE WHEN VAL < 0 THEN 1 END)%2>0 THEN -1 ELSE 1 END AS NEGATIVE
+FROM DBO.GROUPS
+GROUP BY groupid
+
+
+--PG 418
