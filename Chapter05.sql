@@ -43,3 +43,46 @@ OFFSET 50 ROWS FETCH NEXT 25 ROWS ONLY;
 
 -- OPTIMIZATION OF FILTERS DEMOSTRATED THROUGH PAGIN
 --PG442
+
+--OPTIMIZATION OF TOP
+
+
+USE PerformanceV3
+IF OBJECT_ID('DBO.GETPAGE', 'P') IS NOT NULL DROP PROC DBO.GETPAGE;
+
+GO 
+CREATE PROC DBO.GETPAGE
+@ORDERID AS INT = 0, --ANCHOR SORT KEY
+@PAGESIZE AS BIGINT = 25
+AS 
+
+SELECT TOP (@PAGESIZE) ORDERID, ORDERDATE, CUSTID, EMPID
+FROM DBO.Orders
+WHERE ORDERID > @ORDERID
+ORDER BY orderid
+GO
+
+
+EXEC DBO.GETPAGE @PAGESIZE = 25;
+
+EXEC DBO.GETPAGE @ORDERID = 25, @PAGESIZE = 25;
+
+IF OBJECT_ID(N'dbo.GetPage', N'P') IS NOT NULL DROP PROC dbo.GetPage;
+GO
+CREATE PROC dbo.GetPage
+@orderdate AS DATE = '00010101', -- anchor sort key 1 (orderdate)
+@orderid AS INT = 0, -- anchor sort key 2 (orderid)
+@pagesize AS BIGINT = 25
+AS
+SELECT TOP (@pagesize) orderid, orderdate, custid, empid
+FROM dbo.Orders
+WHERE orderdate >= @orderdate
+AND (orderdate > @orderdate OR orderid > @orderid)
+ORDER BY orderdate, orderid;
+GO
+
+EXEC dbo.GetPage @pagesize = 25;
+
+EXEC dbo.GetPage @orderdate = '20101207', @orderid = 410, @pagesize = 25;
+
+--OPTIMITION OF OFFSET-FETCH PG 451
