@@ -215,3 +215,120 @@ IF @@ROWCOUNT < 3000 BREAK;
 END
 
 --TOP N PER GROUP 461
+
+USE TSQLV3;
+CREATE UNIQUE INDEX idx_poc ON Sales.Orders(custid, orderdate DESC, orderid
+DESC)
+INCLUDE(empid);
+
+WITH C AS
+(
+SELECT
+ROW_NUMBER() OVER(
+PARTITION BY custid
+ORDER BY orderdate DESC, orderid DESC) AS rownum,
+orderid, orderdate, custid, empid
+FROM Sales.Orders
+)
+SELECT custid, orderdate, orderid, empid
+FROM C
+WHERE rownum <= 3;
+
+
+
+-- TOP AND APPLY 
+
+SELECT TOP (3) orderid, orderdate, empid
+FROM Sales.Orders
+WHERE custid = 1
+ORDER BY orderdate DESC, orderid DESC;
+
+
+SELECT C.custid, A.ORDERID, A.ORDERDATE, A.EMPID
+FROM Sales.CUSTOMERS AS C
+CROSS APPLY
+(SELECT TOP (3) orderid, orderdate, empid
+FROM Sales.Orders AS O
+WHERE O.custid = C.custid
+ORDER BY orderdate DESC, orderid DESC) AS A;
+
+-- TOP OVER
+
+
+--SELECT TOP (3) OVER ( PARTITION BY custid ORDER BY orderdate, orderid )
+--orderid, orderdate, custid, empid
+--FROM dbo.Orders
+--ORDER BY custid, orderdate, orderid;
+
+
+-- SOLUTION USFING CONCATENATION ( A CARRY - ALONG SORT) 
+
+DROP INDEX idx_poc ON Sales.Orders;
+
+
+WITH C AS
+(
+SELECT
+custid,
+MAX( (CONVERT(CHAR(8), orderdate, 112)
++ RIGHT('000000000' + CAST(orderid AS VARCHAR(10)), 10)
++ CAST(empid AS CHAR(10)) ) COLLATE Latin1_General_BIN2 ) AS s
+FROM Sales.Orders
+GROUP BY custid
+)
+SELECT custid,
+CAST( SUBSTRING(s, 1, 8) AS DATE ) AS orderdate,
+CAST( SUBSTRING(s, 9, 10) AS INT ) AS orderid,
+CAST( SUBSTRING(s, 19, 10) AS CHAR(10) ) AS empid
+FROM C;
+
+
+USE PerformanceV3;
+WITH C AS
+(
+SELECT
+custid,
+MAX( (CONVERT(CHAR(8), orderdate, 112)
++ RIGHT('000000000' + CAST(orderid AS VARCHAR(10)), 10)
++ CAST(empid AS CHAR(10)) ) COLLATE Latin1_General_BIN2 ) AS s
+FROM dbo.Orders
+GROUP BY custid
+)
+SELECT custid,
+CAST( SUBSTRING(s, 1, 8) AS DATE ) AS orderdate,
+CAST( SUBSTRING(s, 9, 10) AS INT ) AS orderid,
+CAST( SUBSTRING(s, 19, 10) AS CHAR(10) ) AS empid
+FROM C;
+--MEDIAN 
+
+USE tempdb;
+IF OBJECT_ID(N'dbo.T1', N'U') IS NOT NULL DROP TABLE dbo.T1;
+GO
+CREATE TABLE dbo.T1
+(
+id INT NOT NULL IDENTITY
+CONSTRAINT PK_T1 PRIMARY KEY,
+grp INT NOT NULL,
+val INT NOT NULL
+);
+CREATE INDEX idx_grp_val ON dbo.T1(grp, val);
+INSERT INTO dbo.T1(grp, val)
+VALUES(1, 30),(1, 10),(1, 100),
+(2, 65),(2, 60),(2, 65),(2, 10);
+
+DECLARE 
+
+@NUMGROUPS AS INT = 10, 
+@ROWSPERGROUP AS INT = 1000000;
+
+TRUNCATE TABLE DBO.T1; 
+
+INSERT INTO DBO.T1 WITH(TABLOCK) (GRP, VAL) 
+SELECT G.N, ABS(CHECKSUM(NEWID())) % 1000000
+FROM TSQLV3.DBO.GetNums(1, @NUMGROUPS) AS G
+CROSS JOIN TSQLV3.DBO.GetNums(1, @ROWSPERGROUP) AS RL
+
+
+CREATE INDEX idx_grp_val ON dbo.T1(grp, val);
+
+-- PG469
