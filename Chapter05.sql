@@ -332,3 +332,41 @@ CROSS JOIN TSQLV3.DBO.GetNums(1, @ROWSPERGROUP) AS RL
 CREATE INDEX idx_grp_val ON dbo.T1(grp, val);
 
 -- PG469
+
+WITH Counts AS
+(
+SELECT grp, COUNT(*) AS cnt
+FROM dbo.T1
+GROUP BY grp
+),
+RowNums AS
+(
+SELECT grp, val,
+ROW_NUMBER() OVER(PARTITION BY grp ORDER BY val) AS n
+FROM dbo.T1
+)
+SELECT C.grp, AVG(1. * R.val) AS median
+FROM Counts AS C
+INNER MERGE JOIN RowNums AS R
+on C.grp = R.grp
+WHERE R.n IN ( ( C.cnt + 1 )* 2, ( C.cnt + 2 ) *2 )
+GROUP BY C.grp;
+
+
+WITH C AS
+(
+SELECT grp,
+COUNT(*) AS cnt,
+(COUNT(*) - 1) / 2 AS ov,
+2 - COUNT(*) % 2 AS fv
+FROM dbo.T1
+GROUP BY grp
+)
+SELECT grp, AVG(1. * val) AS median
+FROM C
+CROSS APPLY ( SELECT O.val
+FROM dbo.T1 AS O
+where O.grp = C.grp
+order by O.val
+OFFSET C.ov ROWS FETCH NEXT C.fv ROWS ONLY ) AS A
+GROUP BY grp;
