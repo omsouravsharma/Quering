@@ -34,3 +34,9 @@ USE PerformanceV3;
 SELECT SCHEMA_NAME(schema_id) AS schemaname, name AS tablename FROM sys.tables;
 
 --pg 476
+
+COMMIT TRAN
+
+--MEASURING THR AMOUNT OF LOGGING
+--BULK ROWSET PROVIDER PG 481
+
