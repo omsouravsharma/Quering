@@ -108,3 +108,87 @@ FROM dbo.Orders
 WHERE empid = 2;
 
 --DELETING DATA 501
+
+--TRUNCATE TABLE 
+
+
+IF OBJECT_ID(N'dbo.T1', N'U') IS NOT NULL DROP TABLE dbo.T1;
+GO
+CREATE TABLE dbo.T1
+(
+keycol INT NOT NULL IDENTITY,
+datacol VARCHAR(10) NOT NULL
+);
+INSERT INTO dbo.T1(datacol) VALUES('A'),('B'),('C');
+SELECT keycol, datacol FROM dbo.T1;
+
+
+
+IF EXISTS(SELECT * FROM dbo.T1)
+BEGIN
+BEGIN TRAN
+DECLARE @tmp AS INT = (SELECT TOP (1) keycol FROM dbo.T1 WITH (TABLOCKX));
+-- lock
+DECLARE @reseedval AS INT = IDENT_CURRENT(N'dbo.T1') +
+1; -- save
+TRUNCATE TABLE
+dbo.T1; -- truncate
+DBCC CHECKIDENT(N'dbo.T1', RESEED,
+@reseedval); -- reseed
+PRINT 'Identity reseeded to ' + CAST(@reseedval AS VARCHAR(10)) + '.';
+COMMIT TRAN
+END
+ELSE
+PRINT 'Table is empty, no need to truncate.' ;
+
+
+INSERT INTO dbo.T1(datacol) VALUES('X'),('Y'),('Z');
+SELECT keycol, datacol FROM dbo.T1;
+
+
+
+SET NOCOUNT ON;
+USE tempdb;
+IF OBJECT_ID(N'dbo.V1', N'V') IS NOT NULL DROP VIEW dbo.V1;
+IF OBJECT_ID(N'dbo.T1', N'U') IS NOT NULL DROP TABLE dbo.T1;
+GO
+CREATE TABLE dbo.T1
+(
+col1 INT NOT NULL PRIMARY KEY,
+col2 INT NOT NULL,
+col3 NUMERIC(12, 2) NOT NULL
+);
+INSERT INTO dbo.T1(col1, col2, col3) VALUES
+( 2, 10, 200.00),
+( 3, 10, 800.00),
+( 5, 10, 100.00),
+( 7, 20, 300.00),
+(11, 20, 500.00),
+(13, 20, 1300.00);
+GO
+CREATE VIEW dbo.V1 WITH SCHEMABINDING
+AS
+SELECT col2, SUM(col3) AS total , COUNT_BIG(*) AS cnt
+FROM dbo.T1
+GROUP BY col2;
+GO
+CREATE UNIQUE CLUSTERED INDEX idx_col2 ON dbo.V1(col2);
+GO
+SELECT col2, total, cnt FROM dbo.V1;
+
+
+TRUNCATE TABLE dbo.T1;
+
+
+CREATE TABLE dbo.T1_STAGE
+(
+col1 INT NOT NULL PRIMARY KEY,
+col2 INT NOT NULL,
+col3 NUMERIC(12, 2) NOT NULL
+);
+ALTER TABLE dbo.T1 SWITCH TO dbo.T1_STAGE;
+DROP TABLE dbo.T1_STAGE;
+
+
+--DELETING DUPLICATES
+
