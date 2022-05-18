@@ -192,3 +192,98 @@ DROP TABLE dbo.T1_STAGE;
 
 --DELETING DUPLICATES
 
+USE tempdb;
+IF OBJECT_ID(N'dbo.Orders', N'U') IS NOT NULL DROP TABLE dbo.Orders;
+GO
+SELECT
+orderid, custid, empid, orderdate, requireddate, shippeddate,
+shipperid, freight, shipname, shipaddress, shipcity, shipregion,
+shippostalcode, shipcountry
+INTO dbo.Orders
+FROM TSQLV3.Sales.Orders
+CROSS JOIN TSQLV3.dbo.Nums
+WHERE n <= 3;
+
+
+WITH C AS (
+SELECT *, ROW_NUMBER() over(PARTITION BY ORDERID ORDER BY (SELECT NULL)) AS N
+FROM DBO.Orders
+)
+
+DELETE FROM C 
+WHERE N >1 
+
+--UPDATING DATA
+
+USE tempdb;
+IF OBJECT_ID(N'dbo.Customers', N'U') IS NOT NULL DROP TABLE dbo.Customers;
+CREATE TABLE dbo.Customers
+(
+custid INT NOT NULL,
+companyname VARCHAR(25) NOT NULL,
+phone VARCHAR(20) NULL,
+address VARCHAR(50) NOT NULL,
+CONSTRAINT PK_Customers PRIMARY KEY(custid)
+);
+GO
+INSERT INTO dbo.Customers(custid, companyname, phone, address)
+VALUES(1, 'cust 1', '(111) 111-1111', 'address 1'),
+(2, 'cust 2', '(222) 222-2222', 'address 2'),
+(3, 'cust 3', '(333) 333-3333', 'address 3'),
+(4, 'cust 4', '(444) 444-4444', 'address 4'),
+(5, 'cust 5', '(555) 555-5555', 'address 5');
+GO
+IF OBJECT_ID(N'dbo.CustomersStage', N'U') IS NOT NULL DROP TABLE
+dbo.CustomersStage;
+CREATE TABLE dbo.CustomersStage
+(
+custid INT NOT NULL,
+companyname VARCHAR(25) NOT NULL,
+phone VARCHAR(20) NULL,
+address VARCHAR(50) NOT NULL,
+CONSTRAINT PK_CustomersStage PRIMARY KEY(custid)
+);
+GO
+INSERT INTO dbo.CustomersStage(custid, companyname, phone, address)
+VALUES(2, 'AAAAA', '(222) 222-2222', 'address 2'),
+(3, 'cust 3', '(333) 333-3333', 'address 3'),
+(5, 'BBBBB', 'CCCCC', 'DDDDD'),
+(6, 'cust 6 (new)', '(666) 666-6666', 'address 6'),
+(7, 'cust 7 (new)', '(777) 777-7777', 'address 7');
+
+
+WITH C AS
+(
+SELECT
+TGT.custid,
+SRC.companyname AS src_companyname,
+TGT.companyname AS tgt_companyname,
+SRC.phone AS src_phone,
+TGT.phone AS tgt_phone,
+SRC.address AS src_address,
+TGT.address AS tgt_address
+FROM dbo.Customers AS TGT
+INNER JOIN dbo.CustomersStage AS SRC
+ON TGT.custid = SRC.custid
+)
+UPDATE C
+SET tgt_companyname = src_companyname,
+tgt_phone = src_phone,
+tgt_address = src_address
+
+
+--UPDATE WITH VARIABLE 
+
+
+USE tempdb;
+IF OBJECT_ID(N'dbo.MySequence', N'U') IS NOT NULL DROP TABLE dbo.MySequence;
+CREATE TABLE dbo.MySequence(val INT NOT NULL);
+INSERT INTO dbo.MySequence(val) VALUES(0);
+
+
+DECLARE @newval AS INT;
+UPDATE dbo.MySequence SET @newval = val += 1;
+SELECT @newval;
+
+
+--MERGING DATA
