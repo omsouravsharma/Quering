@@ -287,3 +287,18 @@ SELECT @newval;
 
 
 --MERGING DATA
+
+
+MERGE INTO dbo.Customers AS TGT
+USING dbo.CustomersStage AS SRC
+ON TGT.custid = SRC.custid
+WHEN MATCHED THEN
+UPDATE SET
+TGT.companyname = SRC.companyname,
+TGT.phone = SRC.phone,
+TGT.address = SRC.address
+WHEN NOT MATCHED THEN
+INSERT (custid, companyname, phone, address)
+VALUES (SRC.custid, SRC.companyname, SRC.phone, SRC.address)
+WHEN NOT MATCHED BY SOURCE THEN
+DELETE;
