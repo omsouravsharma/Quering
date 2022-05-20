@@ -302,5 +302,3 @@ INSERT (custid, companyname, phone, address)
 VALUES (SRC.custid, SRC.companyname, SRC.phone, SRC.address)
 WHEN NOT MATCHED BY SOURCE THEN
 DELETE;
-
---MERGE STILL PENDING 
