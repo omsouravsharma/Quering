@@ -304,3 +304,60 @@ WHEN NOT MATCHED BY SOURCE THEN
 DELETE;
 
 --MERGE STILL PENDING 
+
+
+IF OBJECT_ID(N'dbo.AddCustomer', N'P') IS NOT NULL DROP PROC dbo.AddCustomer;
+GO
+CREATE PROC dbo.AddCustomer
+@custid INT, @companyname VARCHAR(25), @phone VARCHAR(20), @address
+VARCHAR(50)
+AS
+MERGE INTO dbo.Customers  WITH (SERIALIZABLE)  AS TGT
+USING (VALUES(@custid, @companyname, @phone, @address))
+AS SRC(custid, companyname, phone, address)
+ON TGT.custid = SRC.custid
+WHEN MATCHED THEN
+UPDATE SET
+TGT.companyname = SRC.companyname,
+TGT.phone = SRC.phone,
+TGT.address = SRC.address
+WHEN NOT MATCHED THEN
+INSERT (custid, companyname, phone, address)
+VALUES (SRC.custid, SRC.companyname, SRC.phone, SRC.address);
+GO
+
+--USING IS SIMILAR TO FROM
+
+-- THE OUTPUT CLAUSE
+
+
+USE tempdb;
+IF OBJECT_ID(N'dbo.T1', N'U') IS NOT NULL DROP TABLE dbo.T1;
+GO
+CREATE TABLE dbo.T1
+(
+keycol INT NOT NULL IDENTITY(1, 1) CONSTRAINT PK_T1 PRIMARY KEY,
+datacol NVARCHAR(40) NOT NULL
+);
+
+
+INSERT INTO dbo.T1(datacol)
+OUTPUT inserted.$identity, inserted.datacol
+SELECT lastname
+FROM TSQLV3.HR.Employees
+WHERE country = N'USA';
+
+TRUNCATE TABLE dbo.T1;
+
+
+DECLARE @NewRows TABLE(keycol INT, datacol NVARCHAR(40));
+INSERT INTO dbo.T1(datacol)
+OUTPUT inserted.$identity, inserted.datacol
+INTO @NewRows(keycol, datacol)
+SELECT lastname
+FROM TSQLV3.HR.Employees
+WHERE country = N'USA';
+
+SELECT keycol, datacol FROM @NewRows;
+
+--EXAMPLE OF ARCHIVING DELETED DATA 521
