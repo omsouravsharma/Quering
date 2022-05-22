@@ -361,3 +361,63 @@ WHERE country = N'USA';
 SELECT keycol, datacol FROM @NewRows;
 
 --EXAMPLE OF ARCHIVING DELETED DATA 521
+
+
+IF DB_ID(N'Archive') IS NULL CREATE DATABASE Archive;
+GO
+USE Archive;
+IF OBJECT_ID(N'dbo.Orders', N'U') IS NOT NULL DROP TABLE dbo.Orders;
+SELECT ISNULL(orderid, 0) AS orderid, orderdate, empid, custid
+INTO dbo.Orders
+FROM TSQLV3.Sales.Orders WHERE 1 = 2;
+ALTER TABLE dbo.Orders ADD CONSTRAINT PK_Orders PRIMARY KEY(orderid);
+USE tempdb;
+IF OBJECT_ID(N'dbo.Orders', N'U') IS NOT NULL DROP TABLE dbo.Orders;
+SELECT orderid, orderdate, empid, custid INTO dbo.Orders FROM
+TSQLV3.Sales.Orders;
+ALTER TABLE dbo.Orders ADD CONSTRAINT PK_Orders PRIMARY KEY(orderid);
+-- Before delete
+SELECT orderid, orderdate, empid, custid FROM dbo.Orders;
+SELECT orderid, orderdate, empid, custid FROM Archive.dbo.Orders;
+
+
+DELETE FROM dbo.Orders
+OUTPUT
+deleted.orderid,
+deleted.orderdate,
+deleted.empid,
+deleted.custid
+INTO Archive.dbo.Orders
+WHERE orderdate < '20140101';
+
+
+WHILE 1 = 1
+BEGIN
+DELETE TOP (3000) FROM dbo.Orders
+OUTPUT
+deleted.orderid,
+deleted.orderdate,
+deleted.empid,
+deleted.custid
+INTO Archive.dbo.Orders
+WHERE orderdate < '20140101';
+IF @@ROWCOUNT < 3000 BREAK;
+END;
+
+
+SELECT orderid, orderdate, empid, custid FROM dbo.Orders;
+SELECT orderid, orderdate, empid, custid FROM Archive.dbo.Orders;
+
+
+--composable DML
+
+INSERT INTO Archive.dbo.Orders (orderid, orderdate, empid, custid)
+SELECT orderid, orderdate, empid, custid
+FROM ( DELETE FROM dbo.Orders
+OUTPUT
+deleted.orderid,
+deleted.orderdate,
+deleted.empid,
+deleted.custid
+WHERE orderdate < '20140101' ) AS D
+WHERE custid IN (11, 42);
