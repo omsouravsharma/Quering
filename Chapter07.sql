@@ -15,3 +15,28 @@ CAST(SYSDATETIMEOFFSET() AS date) AS "date"
 SELECT
 DATEPART(month, SYSDATETIMEOFFSET()) AS monthnum,
 DATEPART(weekday, SYSDATETIMEOFFSET()) AS weekdaynum; --PG 533
+
+DECLARE @bias AS INT;
+EXEC master.dbo.xp_regread
+'HKEY_LOCAL_MACHINE',
+'SYSTEM\CurrentControlSet\Control\TimeZoneInformation',
+'Bias',
+@bias OUTPUT;
+SELECT
+SYSDATETIMEOFFSET() currentdatetimeoffset,
+DATEPART(TZoffset, SYSDATETIMEOFFSET()) AS currenttzoffset,
+SIGN(DATEPART(TZoffset, SYSDATETIMEOFFSET()) + @bias) AS currentdst;
+--DATEPART
+
+SELECT
+DAY('20150212') AS theday,
+MONTH('20150212') AS themonth,
+YEAR('20150212') AS theyear
+
+--DATENAME
+
+--ISDATE
+
+SELECT
+ISDATE('20150212') AS isdate20150212,
+ISDATE('20150230') AS isdate20150230; --536
