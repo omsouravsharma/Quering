@@ -77,3 +77,71 @@ THEN DATEDIFF(day, CAST(@dto1 AS DATETIME2), CAST(@dto2 AS DATETIME2))
 END; 
 
 --pg538
+
+IF OBJECT_ID(N'dbo.DATEDIFFPARTS', N'IF') IS NOT NULL DROP FUNCTION
+dbo.DATEDIFFPARTS;
+GO
+CREATE FUNCTION dbo.DATEDIFFPARTS(@dt1 AS DATETIME2, @dt2 AS DATETIME2) RETURNS
+TABLE
+/* The function works correctly provided that @dt2 >= @dt1 */
+AS
+RETURN
+SELECT
+yydiff - subyy AS yy,
+(mmdiff - submm) % 12 AS mm,
+DATEDIFF(day, DATEADD(mm, mmdiff - submm, dt1), dt2) - subdd AS dd,
+nsdiff / CAST(3600000000000 AS BIGINT) % 60 AS hh,
+nsdiff / CAST(60000000000 AS BIGINT) % 60 AS mi,
+nsdiff / 1000000000 % 60 AS ss,
+nsdiff % 1000000000 AS ns
+FROM ( VALUES( @dt1, @dt2,
+CAST(@dt1 AS TIME), CAST(@dt2 AS TIME),
+DATEDIFF(yy, @dt1, @dt2),
+DATEDIFF(mm, @dt1, @dt2),
+DATEDIFF(dd, @dt1, @dt2)
+) )
+AS D(dt1, dt2, t1, t2, yydiff, mmdiff, dddiff)
+CROSS APPLY ( VALUES( CASE WHEN DATEADD(yy, yydiff, dt1) > dt2 THEN 1 ELSE
+0 END,
+CASE WHEN DATEADD(mm, mmdiff, dt1) > dt2 THEN 1 ELSE
+0 END,
+CASE WHEN DATEADD(dd, dddiff, dt1) > dt2 THEN 1 ELSE
+0 END ) )
+AS A1(subyy, submm, subdd)
+CROSS APPLY ( VALUES( CAST(86400000000000 AS BIGINT) * subdd
++ (CAST(1000000000 AS BIGINT) * DATEDIFF(ss, '00:00', t2) +
+DATEPART(ns, t2))
+- (CAST(1000000000 AS BIGINT) * DATEDIFF(ss, '00:00', t1) +
+DATEPART(ns, t1)) ) )
+AS A2(nsdiff);
+
+
+
+SELECT yy, mm, dd, hh, mi, ss, ns FROM dbo.DATEDIFFPARTS(TO_CH(TO_DATE('20150212 00:00:00.0000001', '2016021200:00:00.0000000')));
+
+SELECT orderdate AS dt, CONVERT(CHAR(10), orderdate, 101) AS strdt
+INTO #T
+FROM PerformanceV3.dbo.Orders;
+
+SELECT PARSE(strdt AS DATE USING 'en-US') AS mydt
+FROM #T;
+
+
+SELECT CONVERT(DATE, strdt, 101) AS mydt
+FROM #T;
+
+
+SELECT FORMAT(dt, 'MM/dd/yyyy') AS mystrdt
+FROM #T;
+
+
+SET LANGUAGE British;
+SELECT orderid, custid, empid, orderdate
+FROM Sales.Orders
+WHERE orderdate = '20150212';
+SET LANGUAGE us_english;
+SELECT orderid, custid, empid, orderdate
+FROM Sales.Orders
+WHERE orderdate = '20150212';
+
+--PG 548
