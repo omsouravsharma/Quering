@@ -149,3 +149,30 @@ AND endtime >= @s
 OPTION(RECOMPILE);
 
 --pg 574 Max concurrent intervals
+
+CREATE UNIQUE INDEX idx_start_end ON dbo.Sessions(actid, starttime, endtime,
+sessionid);
+
+
+WITH P AS -- time points
+(
+SELECT actid, starttime AS ts FROM dbo.Sessions
+)
+SELECT actid, ts FROM P;
+
+
+WITH P AS -- time points
+(
+SELECT actid, starttime AS ts FROM dbo.Sessions
+),
+C AS -- counts
+(
+SELECT actid, ts,
+(SELECT COUNT(*)
+FROM dbo.Sessions AS S
+WHERE P.actid = S.actid
+AND P.ts >= S.starttime
+AND P.ts < S.endtime) AS cnt
+FROM P
+)
+SELECT actid, ts, cnt FROM C;
