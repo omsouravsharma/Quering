@@ -213,3 +213,44 @@ FROM dbo.SalesAnalysis;
 
 
 --HIGHER POPULATION MOMENTS
+
+--SKEWNESS
+
+WITH SkewCTE AS
+(
+SELECT SUM(salesamount) AS rx,
+SUM(POWER(salesamount,2)) AS rx2,
+SUM(POWER(salesamount,3)) AS rx3,
+COUNT(salesamount) AS rn,
+STDEV(salesamount) AS stdv,
+AVG(salesamount) AS av
+FROM dbo.SalesAnalysis
+)
+SELECT
+(rx3 - 3*rx2*av + 3*rx*av*av - rn*av*av*av)
+/ (stdv*stdv*stdv) * rn (rn-1) (rn-2) AS skewness
+FROM SkewCTE;
+
+
+--KURTOSIS
+
+WITH KurtCTE AS
+(
+SELECT SUM(salesamount) AS rx,
+SUM(POWER(salesamount,2)) AS rx2,
+SUM(POWER(salesamount,3)) AS rx3,
+SUM(POWER(salesamount,4)) AS rx4,
+COUNT(salesamount) AS rn,
+STDEV(salesamount) AS stdv,
+AVG(salesamount) AS av
+FROM dbo.SalesAnalysis
+)
+SELECT
+(rx4 - 4*rx3*av + 6*rx2*av*av - 4*rx*av*av*av + rn*av*av*av*av)
+/ (stdv*stdv*stdv*stdv) rn (rn+1) (rn-1) (rn-2) / (rn-3)
+- 3.0 (rn-1) (rn-1) (rn-2) (rn-3) AS kurtosis
+FROM KurtCTE;
+
+
+-- LINEAR DEPENDENCIES
+
