@@ -254,3 +254,35 @@ FROM KurtCTE;
 
 -- LINEAR DEPENDENCIES
 
+--Covarience: 
+
+WITH CoVarCTE AS
+(
+SELECT salesamount as val1,
+AVG(salesamount) OVER () AS mean1,
+discountamount AS val2,
+AVG(discountamount) OVER() AS mean2
+FROM dbo.SalesAnalysis
+)
+SELECT
+SUM((val1-mean1)*(val2-mean2)) / COUNT(*) AS covar
+FROM CoVarCTE;
+
+
+WITH CoVarCTE AS
+(
+SELECT salesamount as val1,
+AVG(salesamount) OVER () AS mean1,
+discountamount AS val2,
+AVG(discountamount) OVER() AS mean2
+FROM dbo.SalesAnalysis
+)
+SELECT
+SUM((val1-mean1)*(val2-mean2)) / COUNT(*) AS covar,
+(SUM((val1-mean1)*(val2-mean2)) / COUNT(*)) /
+(STDEVP(val1) * STDEVP(val2)) AS correl,
+SQUARE((SUM((val1-mean1)*(val2-mean2)) / COUNT(*)) /
+(STDEVP(val1) * STDEVP(val2))) AS CD
+FROM CoVarCTE;
+
+623
