@@ -143,3 +143,90 @@ ON OD.orderid = O.orderid',
 @on_cols = N'YEAR(orderdate)',
 @agg_func = N'SUM',
 @agg_col = N'qty * unitprice';
+
+--Dynamic search 
+
+SET NOCOUNT ON;
+USE tempdb;
+IF OBJECT_ID(N'dbo.GetOrders', N'P') IS NOT NULL DROP PROC dbo.GetOrders;
+IF OBJECT_ID(N'dbo.Orders', N'U') IS NOT NULL DROP TABLE dbo.Orders;
+GO
+SELECT orderid, custid, empid, orderdate,
+CAST('A' AS CHAR(200)) AS filler
+INTO dbo.Orders
+FROM TSQLV3.Sales.Orders;
+CREATE CLUSTERED INDEX idx_orderdate ON dbo.Orders(orderdate);
+CREATE UNIQUE INDEX idx_orderid ON dbo.Orders(orderid);
+CREATE INDEX idx_custid_empid ON dbo.Orders(custid, empid) INCLUDE(orderid,
+orderdate, filler);
+
+
+IF OBJECT_ID(N'dbo.GetOrders', N'P') IS NOT NULL DROP PROC dbo.GetOrders;
+GO
+CREATE PROC dbo.GetOrders
+@orderid AS INT = NULL,
+@custid AS INT = NULL,
+@empid AS INT = NULL,
+@orderdate AS DATE = NULL
+AS
+SELECT orderid, custid, empid, orderdate, filler
+FROM dbo.Orders
+WHERE (orderid = @orderid OR @orderid IS NULL)
+AND (custid = @custid OR @custid IS NULL)
+AND (empid = @empid OR @empid IS NULL)
+AND (orderdate = @orderdate OR @orderdate IS NULL);
+GO
+
+
+IF OBJECT_ID(N'dbo.GetOrders', N'P') IS NOT NULL DROP PROC dbo.GetOrders;
+GO
+CREATE PROC dbo.GetOrders
+@orderid AS INT = NULL,
+@custid AS INT = NULL,
+@empid AS INT = NULL,
+@orderdate AS DATE = NULL
+AS
+SELECT orderid, custid, empid, orderdate, filler
+FROM dbo.Orders
+WHERE (orderid = @orderid OR @orderid IS NULL)
+AND (custid = @custid OR @custid IS NULL)
+AND (empid = @empid OR @empid IS NULL)
+AND (orderdate = @orderdate OR @orderdate IS NULL)
+OPTION (RECOMPILE);
+GO
+
+
+IF OBJECT_ID(N'dbo.GetOrders', N'P') IS NOT NULL DROP PROC dbo.GetOrders;
+GO
+CREATE PROC dbo.GetOrders
+@orderid AS INT = NULL,
+@custid AS INT = NULL,
+@empid AS INT = NULL,
+@orderdate AS DATE = NULL
+AS
+DECLARE @sql AS NVARCHAR(1000);
+SET @sql =
+N'SELECT orderid, custid, empid, orderdate, filler'
++ N' /* 27702431-107C-478C-8157-6DFCECC148DD */'
++ N' FROM dbo.Orders'
++ N' WHERE 1 = 1'
++ CASE WHEN @orderid IS NOT NULL THEN
+N' AND orderid = @oid' ELSE N'' END
++ CASE WHEN @custid IS NOT NULL THEN
+N' AND custid = @cid' ELSE N'' END
++ CASE WHEN @empid IS NOT NULL THEN
+N' AND empid = @eid' ELSE N'' END
++ CASE WHEN @orderdate IS NOT NULL THEN
+N' AND orderdate = @dt' ELSE N'' END;
+EXEC sp_executesql
+@stmt = @sql,
+@params = N'@oid AS INT, @cid AS INT, @eid AS INT, @dt AS DATE',
+@oid = @orderid,
+@cid = @custid,
+@eid = @empid,
+@dt = @orderdate;
+GO
+EXEC dbo.GetOrders @orderdate = '20140101';
+EXEC dbo.GetOrders @orderdate = '20140102';
+
+-- USer Defined functions 676
