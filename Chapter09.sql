@@ -230,3 +230,39 @@ EXEC dbo.GetOrders @orderdate = '20140101';
 EXEC dbo.GetOrders @orderdate = '20140102';
 
 -- USer Defined functions 676
+
+
+SELECT orderid, custid, empid, shipperid, orderdate, filler
+FROM dbo.Orders
+WHERE orderdate = DATEADD(year, DATEDIFF(year, '19001231', orderdate),
+'19001231')
+OPTION(MAXDOP 1);
+
+IF OBJECT_ID(N'dbo.EndOfYear') IS NOT NULL DROP FUNCTION dbo.EndOfYear;
+GO
+CREATE FUNCTION dbo.EndOfYear(@dt AS DATE) RETURNS DATE
+AS
+BEGIN
+RETURN DATEADD(year, DATEDIFF(year, '19001231', @dt), '19001231');
+END;
+GO
+
+
+SELECT orderid, custid, empid, shipperid, orderdate, filler
+FROM dbo.Orders
+WHERE orderdate = dbo.EndOfYear(orderdate);
+
+
+--stored procedure 
+
+CREATE PROC dbo.GetOrders( @orderid AS INT )
+AS
+SELECT empid, COUNT(*) AS numorders
+/* 703FCFF2-970F-4777-A8B7-8A87B8BE0A4D */
+FROM dbo.Orders
+WHERE orderid >= @orderid
+GROUP BY empid;
+GO
+
+
+--Trigger 712
