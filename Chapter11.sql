@@ -171,3 +171,51 @@ INSERT INTO dbo.Roads(city1, city2, distance) VALUES
 
 
 --885
+
+---------------------------------------------------------------------
+-- Function: PartsExplosion, Parts Explosion
+--
+-- Input : @root INT: assembly id
+--
+-- Output : @PartsExplosion Table:
+-- id and level of contained parts of input part
+-- in all levels
+--
+-- Process : * Insert into @PartsExplosion row of input root part
+-- * In a loop, while previous insert loaded more than 0 rows
+-- insert into @PartsExplosion next level of parts
+---------------------------------------------------------------------
+IF OBJECT_ID(N'dbo.PartsExplosion', N'TF') IS NOT NULL DROP FUNCTION
+dbo.PartsExplosion;
+GO
+CREATE FUNCTION dbo.PartsExplosion(@root AS INT) RETURNS @PartsExplosion Table
+(
+partid INT NOT NULL,
+qty DECIMAL(8, 2) NOT NULL,
+unit VARCHAR(3) NOT NULL,
+lvl INT NOT NULL,
+n INT NOT NULL IDENTITY, -- surrogate key
+UNIQUE CLUSTERED(lvl, n) -- Index will be used to filter lvl
+)
+AS
+BEGIN
+DECLARE @lvl AS INT = 0; -- Initialize level counter with 0
+-- Insert root node to @PartsExplosion
+INSERT INTO @PartsExplosion(partid, qty, unit, lvl)
+SELECT partid, qty, unit, @lvl
+FROM dbo.BOM
+WHERE partid = @root;
+WHILE @@rowcount > 0 -- while previous level had rows
+BEGIN
+SET @lvl = @lvl + 1; -- Increment level counter
+-- Insert next level of subordinates to @PartsExplosion
+INSERT INTO @PartsExplosion(partid, qty, unit, lvl)
+SELECT C.partid, P.qty * C.qty, C.unit, @lvl
+FROM @PartsExplosion AS P -- P = Parent
+INNER JOIN dbo.BOM AS C -- C = Child
+ON P.lvl = @lvl - 1 -- Filter parents from previous level
+AND C.assemblyid = P.partid;
+END
+RETURN;
+END
+GO
